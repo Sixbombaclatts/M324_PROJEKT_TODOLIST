@@ -1,18 +1,32 @@
 import { useEffect, useState } from 'react'
 import logo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
   const [todos, setTodos] = useState([]);
   const [taskdescription, setTaskdescription] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortMode, setSortMode] = useState("az");
+  const [editingTask, setEditingTask] = useState(null);
+  const [editValue, setEditValue] = useState("");
+
+  const fetchTasks = () => {
+    fetch("http://localhost:8080/")
+      .then(response => response.json())
+      .then(data => {
+        setTodos(data);
+      });
+  };
 
   /** Is called when the html form is submitted. It sends a POST request to the API endpoint '/tasks' and updates the component's state with the new todo.
   ** In this case a new taskdecription is added to the actual list on the server.
   */
   const handleSubmit = event => {
     event.preventDefault();
+    if (taskdescription.trim().length === 0) {
+      return;
+    }
     console.log("Sending task description to Spring-Server: "+taskdescription);
     fetch("http://localhost:8080/tasks", {  // API endpoint (the complete URL!) to save a taskdescription
       method: "POST",
@@ -24,8 +38,8 @@ function App() {
     .then(response => {
       console.log("Receiving answer after sending to Spring-Server: ");
       console.log(response);
-      window.location.href = "/";
       setTaskdescription("");             // clear input field, preparing it for the next input
+      fetchTasks();
     })
     .catch(error => console.log(error))
   }
@@ -46,9 +60,7 @@ function App() {
   ** It updates the component's state with the fetched todos from the API Endpoint '/'.
   */
   useEffect(() => {
-    fetch("http://localhost:8080/").then(response => response.json()).then(data => {
-      setTodos(data);
-    });
+    fetchTasks();
   }, []);
 
 
@@ -67,9 +79,90 @@ function App() {
     .then(response => {
       console.log("Receiving answer after deleting on Spring-Server: ");
       console.log(response);
-      window.location.href = "/";
+      fetchTasks();
     })
     .catch(error => console.log(error))
+  }
+
+  const handleEditStart = (taskdescription) => {
+    setEditingTask(taskdescription);
+    setEditValue(taskdescription);
+  }
+
+  const handleEditCancel = () => {
+    setEditingTask(null);
+    setEditValue("");
+  }
+
+  const handleUpdate = (event, taskdescription) => {
+    event.preventDefault();
+    if (editValue.trim().length === 0) {
+      return;
+    }
+    console.log("Sending update to Spring-Server: "+taskdescription+" -> "+editValue);
+    fetch("http://localhost:8080/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        taskdescription: taskdescription,
+        newTaskdescription: editValue
+      })
+    })
+    .then(response => {
+      console.log("Receiving answer after updating on Spring-Server: ");
+      console.log(response);
+      setEditingTask(null);
+      setEditValue("");
+      fetchTasks();
+    })
+    .catch(error => console.log(error))
+  }
+
+  const handleToggleDone = (taskdescription, done) => {
+    setTodos(prevTodos =>
+      prevTodos.map(todo =>
+        todo.taskdescription === taskdescription
+          ? { ...todo, done: done }
+          : todo
+      )
+    );
+    fetch("http://localhost:8080/toggle-done", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ taskdescription: taskdescription, done: done })
+    })
+    .then(response => {
+      console.log("Receiving answer after toggle on Spring-Server: ");
+      console.log(response);
+      fetchTasks();
+    })
+    .catch(error => console.log(error))
+  }
+
+  const getVisibleTasks = () => {
+    const searchLower = searchQuery.trim().toLowerCase();
+    const filtered = todos.filter(todo => {
+      const text = todo.taskdescription.toLowerCase();
+      if (searchLower.length > 0 && !text.includes(searchLower)) {
+        return false;
+      }
+      if (statusFilter === "open" && todo.done) {
+        return false;
+      }
+      if (statusFilter === "done" && !todo.done) {
+        return false;
+      }
+      return true;
+    });
+
+    if (sortMode === "za") {
+      return filtered.slice().sort((a, b) => b.taskdescription.localeCompare(a.taskdescription));
+    }
+    return filtered.slice().sort((a, b) => a.taskdescription.localeCompare(b.taskdescription));
   }
 
   /**
@@ -81,9 +174,36 @@ function App() {
     return (
       <ul className="todo-list">
         {todos.map((todo, index) => (
-          <li key={todo.taskdescription}>
-            <span>{"Task " + (index+1) + ": "+ todo.taskdescription}</span>
-            <button onClick={(event) => handleDelete(event, todo.taskdescription) }>&#10004;</button>
+          <li key={todo.taskdescription} className={todo.done ? "todo-item done" : "todo-item"}>
+            {editingTask === todo.taskdescription ? (
+              <form className="todo-edit" onSubmit={(event) => handleUpdate(event, todo.taskdescription)}>
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={(event) => setEditValue(event.target.value)}
+                />
+                <button type="submit">Speichern</button>
+                <button type="button" onClick={handleEditCancel}>Abbrechen</button>
+              </form>
+            ) : (
+              <>
+                <div className="todo-main">
+                  <label className="todo-check">
+                    <input
+                      type="checkbox"
+                      checked={!!todo.done}
+                      onChange={(event) => handleToggleDone(todo.taskdescription, event.target.checked)}
+                    />
+                    <span className="todo-text">{"Task " + (index+1) + ": " + todo.taskdescription}</span>
+                  </label>
+                  {todo.done && <span className="todo-badge">Erledigt</span>}
+                </div>
+                <div className="todo-actions">
+                  <button type="button" onClick={() => handleEditStart(todo.taskdescription)}>Bearbeiten</button>
+                  <button type="button" onClick={(event) => handleDelete(event, todo.taskdescription)}>Löschen</button>
+                </div>
+              </>
+            )}
           </li>
         ))}
       </ul>
@@ -103,11 +223,38 @@ function App() {
             type="text"
             value={taskdescription}
             onChange={handleChange}
+            placeholder="Task Beschreibung"
           />
           <button type="submit">Absenden</button>
         </form>
+        <div className="todo-controls">
+          <label>
+            Suche
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Suchbegriff"
+            />
+          </label>
+          <label>
+            Status
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="all">Alle</option>
+              <option value="open">Offen</option>
+              <option value="done">Erledigt</option>
+            </select>
+          </label>
+          <label>
+            Sortieren
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
+              <option value="az">A-Z</option>
+              <option value="za">Z-A</option>
+            </select>
+          </label>
+        </div>
         <div>
-          {renderTasks(todos)}
+          {renderTasks(getVisibleTasks())}
         </div>
       </header>
     </div>

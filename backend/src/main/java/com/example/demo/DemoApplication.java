@@ -40,6 +40,48 @@ public class DemoApplication {
 
 	private List<Task> tasks = new ArrayList<>();
 
+	private static class UpdateTaskRequest {
+		private String taskdescription;
+		private String newTaskdescription;
+
+		public String getTaskdescription() {
+			return taskdescription;
+		}
+
+		public void setTaskdescription(String taskdescription) {
+			this.taskdescription = taskdescription;
+		}
+
+		public String getNewTaskdescription() {
+			return newTaskdescription;
+		}
+
+		public void setNewTaskdescription(String newTaskdescription) {
+			this.newTaskdescription = newTaskdescription;
+		}
+	}
+
+	private static class ToggleTaskRequest {
+		private String taskdescription;
+		private boolean done;
+
+		public String getTaskdescription() {
+			return taskdescription;
+		}
+
+		public void setTaskdescription(String taskdescription) {
+			this.taskdescription = taskdescription;
+		}
+
+		public boolean getDone() {
+			return done;
+		}
+
+		public void setDone(boolean done) {
+			this.done = done;
+		}
+	}
+
 	@CrossOrigin
 	@GetMapping("/")
 	public List<Task> getTasks() {
@@ -94,6 +136,63 @@ public class DemoApplication {
 				}
 			}
 			System.out.println(">>>task: '" + task.getTaskdescription() + "' not found!");
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		return "redirect:/";
+	}
+
+	@CrossOrigin
+	@PostMapping("/update")
+	public String updateTask(@RequestBody String updatePayload) {
+		System.out.println("API EP '/update': '" + updatePayload + "'");
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			UpdateTaskRequest updateRequest = mapper.readValue(updatePayload, UpdateTaskRequest.class);
+			String oldDescription = updateRequest.getTaskdescription();
+			String newDescription = updateRequest.getNewTaskdescription();
+
+			if (oldDescription == null || newDescription == null || newDescription.trim().isEmpty()) {
+				return "redirect:/";
+			}
+
+			for (Task t : tasks) {
+				if (t.getTaskdescription().equals(newDescription)) {
+					System.out.println(">>>task: '" + newDescription + "' already exists!");
+					return "redirect:/";
+				}
+			}
+
+			for (Task t : tasks) {
+				if (t.getTaskdescription().equals(oldDescription)) {
+					System.out.println("...updating task: '" + oldDescription + "' -> '" + newDescription + "'");
+					t.setTaskdescription(newDescription);
+					return "redirect:/";
+				}
+			}
+
+			System.out.println(">>>task: '" + oldDescription + "' not found!");
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		return "redirect:/";
+	}
+
+	@CrossOrigin
+	@PostMapping("/toggle-done")
+	public String toggleDone(@RequestBody String togglePayload) {
+		System.out.println("API EP '/toggle-done': '" + togglePayload + "'");
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			ToggleTaskRequest toggleRequest = mapper.readValue(togglePayload, ToggleTaskRequest.class);
+			String description = toggleRequest.getTaskdescription();
+			for (Task t : tasks) {
+				if (t.getTaskdescription().equals(description)) {
+					t.setDone(toggleRequest.getDone());
+					return "redirect:/";
+				}
+			}
+			System.out.println(">>>task: '" + description + "' not found!");
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
