@@ -1,8 +1,9 @@
 package com.example.demo;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -15,8 +16,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * REST API für ToDo-List mit Datenbank-Persistierung
- * 
+ * This is a demo application that provides a RESTful API for a simple ToDo list
+ * without persistence.
+ * The endpoint "/" returns a list of tasks.
+ * The endpoint "/tasks" adds a new unique task.
+ * The endpoint "/delete" suppresses a task from the list.
+ * The task description transferred from the (React) client is provided as a
+ * request body in a JSON structure.
+ * The data is converted to a task object using Jackson and added to the list of
+ * tasks.
+ * All endpoints are annotated with @CrossOrigin to enable cross-origin
+ * requests.
+ *
  * @author luh
  */
 @RestController
@@ -27,22 +38,20 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 
-	@Autowired
-	private TaskRepository taskRepository;
+	private List<Task> tasks = new ArrayList<>();
 
 	@CrossOrigin
 	@GetMapping("/")
 	public List<Task> getTasks() {
-		System.out.println("API EP '/' returns task-list");
-		List<Task> tasks = taskRepository.findAll();
-		System.out.println("Anzahl Tasks in DB: " + tasks.size());
+
+		System.out.println("API EP '/' returns task-list of size " + tasks.size() + ".");
 		if (tasks.size() > 0) {
 			int i = 1;
 			for (Task task : tasks) {
 				System.out.println("-task " + (i++) + ":" + task.getTaskdescription());
 			}
 		}
-		return tasks;
+		return tasks; // actual task list (internally converted to a JSON stream)
 	}
 
 	@CrossOrigin
@@ -51,19 +60,16 @@ public class DemoApplication {
 		System.out.println("API EP '/tasks': '" + taskdescription + "'");
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-			Task task = mapper.readValue(taskdescription, Task.class);
-			
-			// Prüfe auf Duplikate
-			boolean exists = taskRepository.findAll().stream()
-					.anyMatch(t -> t.getTaskdescription().equals(task.getTaskdescription()));
-			
-			if (exists) {
-				System.out.println(">>>task: '" + task.getTaskdescription() + "' already exists!");
-				return "redirect:/"; // duplicates will be ignored
+			Task task;
+			task = mapper.readValue(taskdescription, Task.class);
+			for (Task t : tasks) {
+				if (t.getTaskdescription().equals(task.getTaskdescription())) {
+					System.out.println(">>>task: '" + task.getTaskdescription() + "' already exists!");
+					return "redirect:/"; // duplicates will be ignored
+				}
 			}
-			
 			System.out.println("...adding task: '" + task.getTaskdescription() + "'");
-			taskRepository.save(task);
+			tasks.add(task);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
@@ -76,21 +82,18 @@ public class DemoApplication {
 		System.out.println("API EP '/delete': '" + taskdescription + "'");
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-			Task task = mapper.readValue(taskdescription, Task.class);
-			
-			// Suche Task in Datenbank und lösche ihn
-			Task toDelete = taskRepository.findAll().stream()
-					.filter(t -> t.getTaskdescription().equals(task.getTaskdescription()))
-					.findFirst()
-					.orElse(null);
-			
-			if (toDelete != null) {
-				System.out.println("...deleting task: '" + toDelete.getTaskdescription() + "'");
-				taskRepository.delete(toDelete);
-				return "redirect:/";
-			} else {
-				System.out.println(">>>task: '" + task.getTaskdescription() + "' not found!");
+			Task task;
+			task = mapper.readValue(taskdescription, Task.class);
+			Iterator<Task> it = tasks.iterator();
+			while (it.hasNext()) {
+				Task t = it.next();
+				if (t.getTaskdescription().equals(task.getTaskdescription())) {
+					System.out.println("...deleting task: '" + task.getTaskdescription() + "'");
+					it.remove();
+					return "redirect:/";
+				}
 			}
+			System.out.println(">>>task: '" + task.getTaskdescription() + "' not found!");
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
