@@ -1,5 +1,9 @@
 # TodoList-Backend
 
+## Requirements
+
+- Java 21
+
 
 
 ## Getting started
