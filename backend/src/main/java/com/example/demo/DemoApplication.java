@@ -43,6 +43,8 @@ public class DemoApplication {
 	private static class UpdateTaskRequest {
 		private String taskdescription;
 		private String newTaskdescription;
+		private String dueDate;
+		private boolean reminderEnabled;
 
 		public String getTaskdescription() {
 			return taskdescription;
@@ -58,6 +60,22 @@ public class DemoApplication {
 
 		public void setNewTaskdescription(String newTaskdescription) {
 			this.newTaskdescription = newTaskdescription;
+		}
+
+		public String getDueDate() {
+			return dueDate;
+		}
+
+		public void setDueDate(String dueDate) {
+			this.dueDate = dueDate;
+		}
+
+		public boolean getReminderEnabled() {
+			return reminderEnabled;
+		}
+
+		public void setReminderEnabled(boolean reminderEnabled) {
+			this.reminderEnabled = reminderEnabled;
 		}
 	}
 
@@ -104,6 +122,12 @@ public class DemoApplication {
 		try {
 			Task task;
 			task = mapper.readValue(taskdescription, Task.class);
+			if (task.getDueDate() == null) {
+				task.setDueDate("");
+			}
+			if (task.getDueDate().isBlank()) {
+				task.setReminderEnabled(false);
+			}
 			for (Task t : tasks) {
 				if (t.getTaskdescription().equals(task.getTaskdescription())) {
 					System.out.println(">>>task: '" + task.getTaskdescription() + "' already exists!");
@@ -167,6 +191,12 @@ public class DemoApplication {
 				if (t.getTaskdescription().equals(oldDescription)) {
 					System.out.println("...updating task: '" + oldDescription + "' -> '" + newDescription + "'");
 					t.setTaskdescription(newDescription);
+					t.setDueDate(updateRequest.getDueDate() == null ? "" : updateRequest.getDueDate());
+					if (t.getDueDate().isBlank()) {
+						t.setReminderEnabled(false);
+					} else {
+						t.setReminderEnabled(updateRequest.getReminderEnabled());
+					}
 					return "redirect:/";
 				}
 			}
