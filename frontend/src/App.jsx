@@ -321,17 +321,19 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <h1>
-          ToDo Liste
+        <img src={logo} className="App-logo" alt="Siegel der Aufgabenliste" />
+        <h1 aria-label="Aufgabenliste">
+          Aufgaben
+          <span>Liste</span>
         </h1>
         <form onSubmit={handleSubmit} className='todo-form'>
-          <label htmlFor="taskdescription">Neues Todo anlegen:</label>
+          <label htmlFor="taskdescription">Neue Aufgabe eintragen:</label>
           <input
+            id="taskdescription"
             type="text"
             value={taskdescription}
             onChange={handleChange}
-            placeholder="Task Beschreibung"
+            placeholder="Aufgabenbeschreibung"
           />
           <label htmlFor="dueDate">Fälligkeitsdatum</label>
           <input
@@ -370,22 +372,22 @@ function App() {
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Suchbegriff"
+              placeholder="Wort oder Kürzel"
             />
           </label>
           <label>
             Status
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="all">Alle</option>
-              <option value="open">Offen</option>
-              <option value="done">Erledigt</option>
+              <option value="all">Alle Aufgaben</option>
+              <option value="open">Offene Aufgaben</option>
+              <option value="done">Erledigte Aufgaben</option>
             </select>
           </label>
           <label>
             Sortieren
             <select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
-              <option value="az">A-Z</option>
-              <option value="za">Z-A</option>
+              <option value="az">Von A bis Z</option>
+              <option value="za">Von Z bis A</option>
             </select>
           </label>
         </div>

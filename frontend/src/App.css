@@ -1,20 +1,102 @@
+/* Editoriales Amtsblatt: warmes Papier, harte Satzränder, serifige Titel und rote Stempelakzente. Die Oberfläche soll wie eine bewusst gesetzte Aufgabenakte wirken, nicht wie ein generisches Dashboard. */
 #root {
-  max-width: 1280px;
+  width: 100%;
+}
+
+.App {
+  width: min(900px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: clamp(1rem, 4vw, 3rem) 0;
+}
+
+.App-header {
+  position: relative;
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1.25rem, 4vw, 3rem);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(31, 27, 22, 0.04) 0 1px,
+      transparent 1px 22px
+    ),
+    var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: 14px 14px 0 var(--ink);
+  text-align: left;
+}
+
+.App-header::before {
+  content: "Ausgabe Nr. 324";
+  width: fit-content;
+  padding: 0.25rem 0.45rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.App-logo {
+  position: absolute;
+  top: clamp(0.75rem, 3vw, 1.5rem);
+  right: clamp(0.75rem, 3vw, 1.5rem);
+  width: clamp(3rem, 10vw, 5.5rem);
+  height: clamp(3rem, 10vw, 5.5rem);
+  padding: 0.35rem;
+  border: 3px double var(--signal);
+  border-radius: 50%;
+  filter: sepia(1) saturate(1.8) hue-rotate(320deg);
+  opacity: 0.55;
+  transform: rotate(8deg);
+  mix-blend-mode: multiply;
+}
+
+h1 {
+  margin: 0;
+  padding: 0 0 clamp(0.6rem, 2vw, 1rem);
+  border-bottom: clamp(0.35rem, 1.4vw, 0.75rem) solid var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(3rem, 9vw, 5.8rem);
+  line-height: 0.82;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+h1 span {
+  display: block;
 }
 
 .todo-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+  padding: clamp(0.9rem, 2.5vw, 1.35rem);
+  background: rgba(162, 59, 42, 0.12);
+  border: 2px solid var(--ink);
+  border-left: 14px solid var(--signal);
+}
+
+.todo-form label {
+  grid-column: 1 / -1;
+  width: fit-content;
+  padding: 0.15rem 0.35rem;
+  background: var(--signal);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .todo-form input {
-  width: min(480px, 90vw);
-  padding: 0.5rem 0.75rem;
+  min-width: 0;
+  width: 100%;
 }
 
 .todo-inline-option {
@@ -44,49 +126,108 @@
 }
 
 .todo-controls {
-  margin: 1.5rem auto 1rem;
   display: grid;
-  gap: 0.9rem;
-  justify-items: center;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
 }
 
 .todo-controls label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-}
-
-.todo-controls input,
-.todo-controls select {
-  width: min(320px, 80vw);
-  padding: 0.45rem 0.65rem;
+  display: grid;
+  gap: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .todo-list {
-  list-style: none;
+  display: grid;
+  gap: 1rem;
   padding: 0;
-  margin: 1rem 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  margin: 0;
+  list-style: none;
+}
+
+.todo-list:empty::before {
+  content: "Noch keine Aufgabe eingetragen.";
+  display: block;
+  min-height: 9rem;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 3px dashed var(--signal);
+  background:
+    linear-gradient(135deg, transparent 0 48%, rgba(162, 59, 42, 0.18) 48% 52%, transparent 52% 100%),
+    rgba(79, 93, 47, 0.12);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: clamp(1rem, 3vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .todo-item {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.9rem 1rem;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: clamp(0.95rem, 2.5vw, 1.25rem);
+  background: rgba(243, 229, 194, 0.94);
+  border: 2px solid var(--ink);
+  border-left: 14px solid var(--signal);
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.todo-item:nth-child(even) {
+  transform: translateX(0.6rem);
+}
+
+.todo-item:not(.done)::after {
+  content: "Offen";
+  position: absolute;
+  top: -0.65rem;
+  right: 0.8rem;
+  padding: 0.15rem 0.4rem;
+  background: var(--paper);
+  border: 2px solid var(--signal);
+  color: var(--signal);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(2deg);
+}
+
+.todo-item:hover {
+  background: var(--paper);
+  box-shadow: 7px 7px 0 var(--ink);
+  transform: translate(-0.18rem, -0.18rem);
+}
+
+.todo-item:nth-child(even):hover {
+  transform: translate(0.42rem, -0.18rem);
 }
 
 .todo-item.done {
-  background: rgba(120, 255, 180, 0.12);
-  border-color: rgba(120, 255, 180, 0.25);
+  background: rgba(79, 93, 47, 0.18);
+  border-left-color: var(--moss);
+}
+
+.todo-item.done::before {
+  content: "";
+  position: absolute;
+  inset: 0.45rem;
+  border: 1px solid rgba(79, 93, 47, 0.36);
+  pointer-events: none;
 }
 
 .todo-main {
@@ -94,7 +235,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.75rem;
-  flex: 1;
 }
 
 .todo-meta {
@@ -123,79 +263,127 @@
 
 .todo-check {
   display: flex;
+  min-width: 0;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.todo-check input {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0;
+  accent-color: var(--moss);
 }
 
 .todo-text {
-  font-weight: 600;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.05rem, 2.5vw, 1.35rem);
+  font-weight: 700;
 }
 
 .todo-item.done .todo-text {
+  color: var(--moss);
   text-decoration: line-through;
-  opacity: 0.7;
+  text-decoration-thickness: 0.18rem;
+  text-decoration-color: var(--signal);
 }
 
 .todo-badge {
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.2rem 0.45rem;
+  border: 2px solid var(--moss);
+  color: var(--moss);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(120, 255, 180, 0.25);
+  transform: rotate(-3deg);
 }
 
 .todo-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.todo-actions button:last-child {
+  color: var(--signal);
 }
 
 .todo-edit {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.55rem;
   align-items: center;
-  width: 100%;
-  justify-content: center;
 }
 
 .todo-edit input {
-  width: min(360px, 80vw);
-  padding: 0.45rem 0.65rem;
+  min-width: 0;
+  width: 100%;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@media (max-width: 760px) {
+  .App {
+    width: min(100% - 1rem, 42rem);
+    padding-bottom: 1.75rem;
   }
-  to {
-    transform: rotate(360deg);
+
+  .App-header {
+    box-shadow: 7px 7px 0 var(--ink);
+  }
+
+  .App-logo {
+    opacity: 0.32;
+  }
+
+  .todo-form,
+  .todo-controls,
+  .todo-item,
+  .todo-edit {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-actions {
+    justify-content: flex-start;
+  }
+
+  .todo-item:nth-child(even) {
+    transform: none;
+  }
+
+  .todo-item:hover,
+  .todo-item:nth-child(even):hover {
+    transform: translate(-0.12rem, -0.12rem);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@media (max-width: 460px) {
+  .App {
+    width: 100%;
+    padding-top: 0;
   }
-}
 
-.card {
-  padding: 2em;
-}
+  .App-header {
+    min-height: 100vh;
+    border-right: 0;
+    border-left: 0;
+    box-shadow: none;
+  }
 
-.read-the-docs {
-  color: #888;
+  h1 {
+    font-size: clamp(2.85rem, 18vw, 4.5rem);
+  }
+
+  .todo-actions button,
+  .todo-form button,
+  .todo-edit button {
+    width: 100%;
+  }
 }
