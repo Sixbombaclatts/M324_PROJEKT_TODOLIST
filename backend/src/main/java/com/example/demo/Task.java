@@ -1,25 +1,48 @@
 package com.example.demo;
 
-/** the simplest task 
- * 
- * @author luh
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
+/**
+ * Task entity for the Todo application.
  */
+@Entity
 public class Task {
-	
-	private String taskdescription; // must have the EXACT name as his React state property and may not be ignored!
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	private String taskdescription;
 	private String dueDate;
 	private boolean reminderEnabled;
 	private boolean done;
 
 	public Task() {
-		// default constructor required for Jackson deserialization
-    }
+	}
 
-	public String getTaskdescription() { // do not apply camel-case here! Its a Bean!
+	public Task(String taskdescription) {
+		this.taskdescription = taskdescription;
+		this.dueDate = "";
+		this.reminderEnabled = false;
+		this.done = false;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getTaskdescription() {
 		return taskdescription;
 	}
 
-	public void setTaskdescription(String taskdescription) { // do not apply camel-case here! Its a Bean!
+	public void setTaskdescription(String taskdescription) {
 		this.taskdescription = taskdescription;
 	}
 
