@@ -28,11 +28,16 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file backend/pom.xml && mkdir staging && cd backend/target/*.jar staging
-      - uses: actions/upload-artifact@4
-        with:
-          name: Package
-          path: staging
+      run: mvn -B package --file backend/pom.xml
+
+    - name: Prepare backend artifact
+      run: mkdir staging && cp backend/target/*.jar staging/
+
+    - name: Upload backend artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-jar
+        path: staging
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     # - name: Update dependency graph
