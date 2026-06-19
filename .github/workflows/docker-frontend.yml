@@ -1,29 +1,33 @@
 name: Build and Push Docker Frontend Image
+
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/docker-frontend.yml"
+  workflow_dispatch:
+
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Extract Docker image metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ vars.DOCKER_USERNAME }}/m324_frontend:1.0
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Log in to Docker Hub
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
         with:
-          context: frontend
-          file: frontend/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          annotations: ${{ steps.meta.outputs.annotations }}
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ vars.DOCKER_USERNAME }}/m324_frontend:latest
+            ${{ vars.DOCKER_USERNAME }}/m324_frontend:1.0-${{ github.sha }}

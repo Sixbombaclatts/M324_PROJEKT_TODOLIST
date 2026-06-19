@@ -1,2 +1,6 @@
 target
+.mvn
 bin
+*.log
+.git
+.gitignore
