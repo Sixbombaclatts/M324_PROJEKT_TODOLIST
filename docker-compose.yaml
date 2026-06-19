@@ -1,17 +1,17 @@
 services:
   backend:
-    image: ${DOCKER_USERNAME}/m324_backend:1.0
-    container_name: m324_backend
+    image: ${DOCKER_USERNAME}/m324_backend:latest
+    container_name: todo_backend
     ports:
       - "8080:8080"
     networks:
       - todo_network
 
   frontend:
-    image: ${DOCKER_USERNAME}/m324_frontend:1.0
-    container_name: m324_frontend
+    image: ${DOCKER_USERNAME}/m324_frontend:latest
+    container_name: todo_frontend
     ports:
-      - "8081:80"
+      - "3000:80"
     depends_on:
       - backend
     networks:
