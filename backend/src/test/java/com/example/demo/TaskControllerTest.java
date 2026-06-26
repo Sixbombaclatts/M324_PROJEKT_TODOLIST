@@ -34,21 +34,19 @@ class TaskControllerTest {
 	}
 
 	@Test
-	void getAllTasks_ShouldReturnEmptyList_WhenNoTasksExist() throws Exception {
-		mockMvc.perform(get("/tasks"))
+	void getAllTasksV1_ShouldReturnEmptyList_WhenNoTasksExist() throws Exception {
+		mockMvc.perform(get("/tasks").param("api", "v1"))
 				.andExpect(status().isOk())
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$", hasSize(0)));
 	}
 
 	@Test
-	void getAllTasks_ShouldReturnListOfTasks_WhenTasksExist() throws Exception {
-		Task task1 = new Task("First task");
-		Task task2 = new Task("Second task");
-		taskRepository.save(task1);
-		taskRepository.save(task2);
+	void getAllTasksV1_ShouldReturnListOfTasks_WhenTasksExist() throws Exception {
+		taskRepository.save(new Task("First task"));
+		taskRepository.save(new Task("Second task"));
 
-		mockMvc.perform(get("/tasks"))
+		mockMvc.perform(get("/tasks").param("api", "v1"))
 				.andExpect(status().isOk())
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$", hasSize(2)))
@@ -57,10 +55,11 @@ class TaskControllerTest {
 	}
 
 	@Test
-	void createTask_ShouldReturnCreatedTask_WhenValidRequest() throws Exception {
+	void createTaskV1_ShouldReturnCreatedTask_WhenValidRequest() throws Exception {
 		String taskJson = "{\"taskdescription\":\"New task\"}";
 
 		mockMvc.perform(post("/tasks")
+				.param("api", "v1")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(taskJson))
 				.andExpect(status().isCreated())
@@ -68,6 +67,88 @@ class TaskControllerTest {
 				.andExpect(jsonPath("$.id").exists())
 				.andExpect(jsonPath("$.taskdescription", is("New task")))
 				.andExpect(jsonPath("$.done", is(false)));
+	}
+
+	@Test
+	void getAllTasksV1_ShouldDefaultToV1_WhenApiParamMissing() throws Exception {
+		taskRepository.save(new Task("Default version task"));
+
+		mockMvc.perform(get("/tasks"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].taskdescription", is("Default version task")));
+	}
+
+	@Test
+	void getAllTasksV2_ShouldReturnWrappedList_WhenNoTasksExist() throws Exception {
+		mockMvc.perform(get("/tasks").param("api", "v2"))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.apiVersion", is("v2")))
+				.andExpect(jsonPath("$.count", is(0)))
+				.andExpect(jsonPath("$.items", hasSize(0)));
+	}
+
+	@Test
+	void getAllTasksV2_ShouldReturnWrappedListWithDescriptionField_WhenTasksExist() throws Exception {
+		taskRepository.save(new Task("First task"));
+		taskRepository.save(new Task("Second task"));
+
+		mockMvc.perform(get("/tasks").param("api", "v2"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.apiVersion", is("v2")))
+				.andExpect(jsonPath("$.count", is(2)))
+				.andExpect(jsonPath("$.items", hasSize(2)))
+				.andExpect(jsonPath("$.items[0].description", is("First task")))
+				.andExpect(jsonPath("$.items[1].description", is("Second task")));
+	}
+
+	@Test
+	void createTaskV2_ShouldReturnTaskV2Dto_WhenValidRequest() throws Exception {
+		String taskJson = "{\"taskdescription\":\"New v2 task\"}";
+
+		mockMvc.perform(post("/tasks")
+				.param("api", "v2")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(taskJson))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.description", is("New v2 task")))
+				.andExpect(jsonPath("$.done", is(false)));
+	}
+
+	@Test
+	void deleteTaskV2_ShouldReturnJsonAction_WhenTaskExists() throws Exception {
+		taskRepository.save(new Task("Delete me"));
+
+		mockMvc.perform(post("/delete")
+				.param("api", "v2")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"taskdescription\":\"Delete me\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.apiVersion", is("v2")))
+				.andExpect(jsonPath("$.action", is("deleted")))
+				.andExpect(jsonPath("$.description", is("Delete me")));
+	}
+
+	@Test
+	void toggleDoneV2_ShouldReturnJsonAction_WhenTaskExists() throws Exception {
+		taskRepository.save(new Task("Toggle me"));
+
+		mockMvc.perform(post("/toggle-done")
+				.param("api", "v2")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"taskdescription\":\"Toggle me\",\"done\":true}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.apiVersion", is("v2")))
+				.andExpect(jsonPath("$.action", is("toggled")))
+				.andExpect(jsonPath("$.done", is(true)));
+	}
+
+	@Test
+	void getAllTasks_ShouldReturnBadRequest_WhenApiVersionInvalid() throws Exception {
+		mockMvc.perform(get("/tasks").param("api", "v99"))
+				.andExpect(status().isBadRequest())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("Unsupported API version")));
 	}
 
 }

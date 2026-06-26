@@ -18,7 +18,7 @@ describe('App todo list', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/');
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/?api=v1');
     });
 
     expect(screen.queryByText(/Task 1:/)).not.toBeInTheDocument();

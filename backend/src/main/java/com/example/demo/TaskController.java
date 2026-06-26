@@ -1,6 +1,7 @@
 package com.example.demo;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -85,31 +87,48 @@ public class TaskController {
 
 	@CrossOrigin
 	@GetMapping("/")
-	public List<Task> getTasks() {
-		return taskRepository.findAll();
+	public ResponseEntity<?> getTasks(@RequestParam(name = "api", defaultValue = "v1") String apiVersion) {
+		return getAllTasks(apiVersion);
 	}
 
 	@CrossOrigin
 	@GetMapping("/tasks")
-	public List<Task> getAllTasks() {
-		return taskRepository.findAll();
+	public ResponseEntity<?> getAllTasks(@RequestParam(name = "api", defaultValue = "v1") String apiVersion) {
+		ApiVersion version = ApiVersion.from(apiVersion);
+		List<Task> tasks = taskRepository.findAll();
+		if (version == ApiVersion.V2) {
+			return ResponseEntity.ok(new TaskV2ListResponse(tasks));
+		}
+		return ResponseEntity.ok(tasks);
 	}
 
 	@CrossOrigin
 	@PostMapping("/tasks")
-	public ResponseEntity<?> addTask(@RequestBody String taskdescription) {
-		System.out.println("API EP '/tasks': '" + taskdescription + "'");
+	public ResponseEntity<?> addTask(
+			@RequestParam(name = "api", defaultValue = "v1") String apiVersion,
+			@RequestBody String taskdescription) {
+		ApiVersion version = ApiVersion.from(apiVersion);
+		System.out.println("API EP '/tasks' [" + version.getValue() + "]: '" + taskdescription + "'");
 		try {
 			Task task = mapper.readValue(taskdescription, Task.class);
 			normalizeTask(task);
 
 			if (taskRepository.findByTaskdescription(task.getTaskdescription()).isPresent()) {
 				System.out.println(">>>task: '" + task.getTaskdescription() + "' already exists!");
+				if (version == ApiVersion.V2) {
+					return ResponseEntity.ok(Map.of(
+							"apiVersion", "v2",
+							"action", "duplicate",
+							"description", task.getTaskdescription()));
+				}
 				return ResponseEntity.ok("redirect:/");
 			}
 
 			Task saved = taskRepository.save(task);
 			System.out.println("...adding task: '" + saved.getTaskdescription() + "'");
+			if (version == ApiVersion.V2) {
+				return ResponseEntity.status(HttpStatus.CREATED).body(TaskV2Dto.from(saved));
+			}
 			return ResponseEntity.status(HttpStatus.CREATED).body(saved);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
@@ -119,39 +138,65 @@ public class TaskController {
 
 	@CrossOrigin
 	@PostMapping("/delete")
-	public String delTask(@RequestBody String taskdescription) {
-		System.out.println("API EP '/delete': '" + taskdescription + "'");
+	public ResponseEntity<?> delTask(
+			@RequestParam(name = "api", defaultValue = "v1") String apiVersion,
+			@RequestBody String taskdescription) {
+		ApiVersion version = ApiVersion.from(apiVersion);
+		System.out.println("API EP '/delete' [" + version.getValue() + "]: '" + taskdescription + "'");
 		try {
 			Task task = mapper.readValue(taskdescription, Task.class);
 			var existing = taskRepository.findByTaskdescription(task.getTaskdescription());
 			if (existing.isPresent()) {
 				System.out.println("...deleting task: '" + task.getTaskdescription() + "'");
 				taskRepository.delete(existing.get());
-				return "redirect:/";
+				if (version == ApiVersion.V2) {
+					return ResponseEntity.ok(Map.of(
+							"apiVersion", "v2",
+							"action", "deleted",
+							"description", task.getTaskdescription()));
+				}
+				return ResponseEntity.ok("redirect:/");
 			}
 			System.out.println(">>>task: '" + task.getTaskdescription() + "' not found!");
+			if (version == ApiVersion.V2) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+						"apiVersion", "v2",
+						"action", "not_found",
+						"description", task.getTaskdescription()));
+			}
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
-		return "redirect:/";
+		return ResponseEntity.ok("redirect:/");
 	}
 
 	@CrossOrigin
 	@PostMapping("/update")
-	public String updateTask(@RequestBody String updatePayload) {
-		System.out.println("API EP '/update': '" + updatePayload + "'");
+	public ResponseEntity<?> updateTask(
+			@RequestParam(name = "api", defaultValue = "v1") String apiVersion,
+			@RequestBody String updatePayload) {
+		ApiVersion version = ApiVersion.from(apiVersion);
+		System.out.println("API EP '/update' [" + version.getValue() + "]: '" + updatePayload + "'");
 		try {
 			UpdateTaskRequest updateRequest = mapper.readValue(updatePayload, UpdateTaskRequest.class);
 			String oldDescription = updateRequest.getTaskdescription();
 			String newDescription = updateRequest.getNewTaskdescription();
 
 			if (oldDescription == null || newDescription == null || newDescription.trim().isEmpty()) {
-				return "redirect:/";
+				return version == ApiVersion.V2
+						? ResponseEntity.badRequest().body(Map.of("apiVersion", "v2", "action", "invalid_request"))
+						: ResponseEntity.ok("redirect:/");
 			}
 
 			if (taskRepository.findByTaskdescription(newDescription).isPresent()) {
 				System.out.println(">>>task: '" + newDescription + "' already exists!");
-				return "redirect:/";
+				if (version == ApiVersion.V2) {
+					return ResponseEntity.ok(Map.of(
+							"apiVersion", "v2",
+							"action", "duplicate",
+							"description", newDescription));
+				}
+				return ResponseEntity.ok("redirect:/");
 			}
 
 			var existing = taskRepository.findByTaskdescription(oldDescription);
@@ -166,20 +211,35 @@ public class TaskController {
 					t.setReminderEnabled(updateRequest.getReminderEnabled());
 				}
 				taskRepository.save(t);
-				return "redirect:/";
+				if (version == ApiVersion.V2) {
+					return ResponseEntity.ok(Map.of(
+							"apiVersion", "v2",
+							"action", "updated",
+							"description", newDescription));
+				}
+				return ResponseEntity.ok("redirect:/");
 			}
 
 			System.out.println(">>>task: '" + oldDescription + "' not found!");
+			if (version == ApiVersion.V2) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+						"apiVersion", "v2",
+						"action", "not_found",
+						"description", oldDescription));
+			}
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
-		return "redirect:/";
+		return ResponseEntity.ok("redirect:/");
 	}
 
 	@CrossOrigin
 	@PostMapping("/toggle-done")
-	public String toggleDone(@RequestBody String togglePayload) {
-		System.out.println("API EP '/toggle-done': '" + togglePayload + "'");
+	public ResponseEntity<?> toggleDone(
+			@RequestParam(name = "api", defaultValue = "v1") String apiVersion,
+			@RequestBody String togglePayload) {
+		ApiVersion version = ApiVersion.from(apiVersion);
+		System.out.println("API EP '/toggle-done' [" + version.getValue() + "]: '" + togglePayload + "'");
 		try {
 			ToggleTaskRequest toggleRequest = mapper.readValue(togglePayload, ToggleTaskRequest.class);
 			String description = toggleRequest.getTaskdescription();
@@ -188,13 +248,26 @@ public class TaskController {
 				Task t = existing.get();
 				t.setDone(toggleRequest.getDone());
 				taskRepository.save(t);
-				return "redirect:/";
+				if (version == ApiVersion.V2) {
+					return ResponseEntity.ok(Map.of(
+							"apiVersion", "v2",
+							"action", "toggled",
+							"description", description,
+							"done", toggleRequest.getDone()));
+				}
+				return ResponseEntity.ok("redirect:/");
 			}
 			System.out.println(">>>task: '" + description + "' not found!");
+			if (version == ApiVersion.V2) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+						"apiVersion", "v2",
+						"action", "not_found",
+						"description", description));
+			}
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
-		return "redirect:/";
+		return ResponseEntity.ok("redirect:/");
 	}
 
 	private void normalizeTask(Task task) {

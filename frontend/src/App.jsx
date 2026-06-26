@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 import logo from './assets/react.svg'
 import './App.css'
 
+const API_BASE = 'http://localhost:8080'
+const API_VERSION = 'v1'
+const apiUrl = (path) => `${API_BASE}${path}?api=${API_VERSION}`
+
 function App() {
   const [todos, setTodos] = useState([]);
   const [taskdescription, setTaskdescription] = useState("");
@@ -17,7 +21,7 @@ function App() {
   const [nowTick, setNowTick] = useState(Date.now());
 
   const fetchTasks = () => {
-    fetch("http://localhost:8080/")
+    fetch(apiUrl('/'))
       .then(response => response.json())
       .then(data => {
         setTodos(data);
@@ -88,7 +92,7 @@ function App() {
       return;
     }
     console.log("Sending task description to Spring-Server: "+taskdescription);
-    fetch("http://localhost:8080/tasks", {  // API endpoint (the complete URL!) to save a taskdescription
+    fetch(apiUrl('/tasks'), {  // API endpoint (the complete URL!) to save a taskdescription
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -143,7 +147,7 @@ function App() {
   */
   const handleDelete = (event, taskdescription) => {
     console.log("Sending task description to delete on Spring-Server: "+taskdescription);
-    fetch(`http://localhost:8080/delete`, { // API endpoint (the complete URL!) to delete an existing taskdescription in the list
+    fetch(apiUrl('/delete'), { // API endpoint (the complete URL!) to delete an existing taskdescription in the list
       method: "POST",
       body: JSON.stringify({ taskdescription: taskdescription }),
       headers: {
@@ -179,7 +183,7 @@ function App() {
       return;
     }
     console.log("Sending update to Spring-Server: "+taskdescription+" -> "+editValue);
-    fetch("http://localhost:8080/update", {
+    fetch(apiUrl('/update'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -211,7 +215,7 @@ function App() {
           : todo
       )
     );
-    fetch("http://localhost:8080/toggle-done", {
+    fetch(apiUrl('/toggle-done'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

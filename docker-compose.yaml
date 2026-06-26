@@ -1,6 +1,7 @@
 services:
   backend:
-    image: ${DOCKER_USERNAME}/m324_backend:latest
+    build: ./backend
+    image: m324_backend:local
     container_name: todo_backend
     ports:
       - "8080:8080"
